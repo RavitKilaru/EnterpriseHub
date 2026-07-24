@@ -16,7 +16,7 @@ services:
         condition: service_healthy
 
     env_file:
-      - backend/.env
+      - .env
 
     volumes:
       - static_volume:/vol/static
@@ -79,7 +79,7 @@ services:
     command: celery -A config worker -l info
 
     env_file:
-      - backend/.env
+      - .env
 
     depends_on:
       postgres:
@@ -100,7 +100,7 @@ services:
     command: celery -A config beat -l info
 
     env_file:
-      - backend/.env
+      - .env
 
     depends_on:
       postgres:
