@@ -22,6 +22,17 @@ services:
       - static_volume:/vol/static
       - media_volume:/vol/media
 
+    networks:
+      - enterprisehub-network
+
+    stop_grace_period: 30s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
     restart: unless-stopped
 
   postgres:
@@ -29,15 +40,13 @@ services:
 
     container_name: enterprisehub-postgres
 
-    restart: unless-stopped
-
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
 
-    ports:
-      - "5432:5432"
+    expose:
+      - "5432"
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -48,17 +57,26 @@ services:
       timeout: 5s
       retries: 5
 
+    networks:
+      - enterprisehub-network
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+    restart: unless-stopped
+
   redis:
     image: redis:7-alpine
 
     container_name: enterprisehub-redis
 
-    restart: unless-stopped
-
     command: redis-server --appendonly yes
 
-    ports:
-      - "6379:6379"
+    expose:
+      - "6379"
 
     volumes:
       - redis_data:/data
@@ -68,6 +86,17 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+    networks:
+      - enterprisehub-network
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    
+    restart: unless-stopped
 
   celery-worker:
     build:
@@ -87,6 +116,17 @@ services:
 
       redis:
         condition: service_healthy
+
+    networks:
+      - enterprisehub-network
+
+    stop_grace_period: 30s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
 
     restart: unless-stopped
 
@@ -109,6 +149,17 @@ services:
       redis:
         condition: service_healthy
 
+    networks:
+      - enterprisehub-network
+
+    stop_grace_period: 30s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
     restart: unless-stopped
 
   nginx:
@@ -127,6 +178,15 @@ services:
       - static_volume:/vol/static
       - media_volume:/vol/media
 
+    networks:
+      - enterprisehub-network
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
     restart: unless-stopped
 
 volumes:
@@ -135,3 +195,8 @@ volumes:
   redis_data:
   static_volume:
   media_volume:
+
+
+networks:
+  enterprisehub-network:
+    driver: bridge
