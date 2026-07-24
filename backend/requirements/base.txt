@@ -23,3 +23,8 @@ typing_extensions==4.16.0
 tzdata==2026.3
 uritemplate==4.2.0
 whitenoise==6.12.0
+redis==5.2.1
+django-redis==5.4.0
+celery==5.5.3
+# django-celery-beat==2.8.1
+# django-celery-results==2.6.0
