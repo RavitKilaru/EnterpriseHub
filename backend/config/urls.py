@@ -42,6 +42,6 @@ urlpatterns = [
         SpectacularRedocView.as_view(url_name="schema"),
         name="redoc",
     ),
-    path("", HealthRecordLogView.as_view(), name="health-record-log"),
+    path("health/", HealthRecordLogView.as_view(), name="health-record-log"),
     # path("api/accounts/", include("apps.accounts.urls")),
 ]

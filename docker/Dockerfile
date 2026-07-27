@@ -2,7 +2,7 @@
 # EnterpriseHub Docker Image
 ###########################################################
 
-FROM python:3.12-slim
+FROM python:3.12.11-slim
 
 ###########################################################
 # Environment Variables
@@ -34,9 +34,8 @@ RUN apt-get update && apt-get install -y \
 
 COPY backend/requirements/base.txt .
 
-RUN pip install --upgrade pip
-
-RUN pip install --no-cache-dir -r base.txt
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r base.txt
 
 ###########################################################
 # Copy Django Project
@@ -62,9 +61,8 @@ RUN chmod +x /app/entrypoint.sh
 # Create Non Root User
 ###########################################################
 
-RUN useradd -m appuser
-
-RUN chown -R appuser:appuser /app
+RUN useradd -m appuser && \
+    chown -R appuser:appuser /app
 
 USER appuser
 
@@ -78,7 +76,7 @@ EXPOSE 8000
 # Health Check
 ###########################################################
 
-HEALTHCHECK --interval=30s --timeout=5s CMD curl --fail http://localhost:8000/ || exit 1
+HEALTHCHECK --interval=30s --timeout=5s CMD curl --fail http://localhost:8000/health/ || exit 1
 
 ###########################################################
 # Start Container
