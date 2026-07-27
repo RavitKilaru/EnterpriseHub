@@ -7,10 +7,88 @@ on:
 jobs:
 
   test:
-
+    name: Django CI
     runs-on: ubuntu-latest
 
-    steps:
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: enterprisehub
+          POSTGRES_USER: enterprisehub
+          POSTGRES_PASSWORD: EnterpriseHub@123
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U enterprisehub -d enterprisehub"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
 
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings.development
+
+      SECRET_KEY: django-insecure-test-key
+
+      DEBUG: "True"
+
+      ALLOWED_HOSTS: localhost,127.0.0.1
+
+      LANGUAGE_CODE: en-us
+      TIME_ZONE: Asia/Kolkata
+
+      DB_ENGINE: django.db.backends.postgresql
+      DB_NAME: enterprisehub
+      DB_USER: enterprisehub
+      DB_PASSWORD: EnterpriseHub@123
+      DB_HOST: localhost
+      DB_PORT: 5432
+
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+
+      CELERY_BROKER_URL: redis://localhost:6379/0
+      CELERY_RESULT_BACKEND: redis://localhost:6379/0
+
+      LOG_LEVEL: INFO
+
+    steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: backend/requirements/base.txt
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r backend/requirements/base.txt
+
+      - name: Django System Check
+        working-directory: backend
+        run: |
+          python manage.py check
+
+      - name: Check for Missing Migrations
+        working-directory: backend
+        run: |
+          python manage.py makemigrations --check --dry-run
+
+      - name: Run Unit Tests
+        working-directory: backend
+        run: |
+          python manage.py test
