@@ -1,10 +1,7 @@
 services:
   django:
     container_name: enterprisehub
-
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
+    image: ghcr.io/RavitKilaru/enterprisehub:latest
 
     expose:
       - "8000"
@@ -99,12 +96,8 @@ services:
     restart: unless-stopped
 
   celery-worker:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
-
+    image: ghcr.io/ravitkilaru/enterprisehub:latest
     container_name: enterprisehub-celery-worker
-
     command: celery -A config worker -l info
 
     env_file:
@@ -131,12 +124,8 @@ services:
     restart: unless-stopped
 
   celery-beat:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile
-
+    image: ghcr.io/ravitkilaru/enterprisehub:latest
     container_name: enterprisehub-celery-beat
-
     command: celery -A config beat -l info
 
     env_file:
