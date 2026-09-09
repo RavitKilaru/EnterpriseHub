@@ -1,85 +1,70 @@
-###########################################################
-# EnterpriseHub Docker Image
-###########################################################
-
-FROM python:3.12.11-slim
-
-###########################################################
-# Environment Variables
-###########################################################
+############################################################
+# Stage 1 - Builder
+############################################################
+FROM python:3.12.11-slim AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-###########################################################
-# Working Directory
-###########################################################
-
-WORKDIR /app
-
-###########################################################
-# Install Linux Packages
-###########################################################
+WORKDIR /build
 
 RUN apt-get update && apt-get install -y \
     gcc \
     build-essential \
     libpq-dev \
-    curl \
     && rm -rf /var/lib/apt/lists/*
-
-###########################################################
-# Install Python Dependencies
-###########################################################
 
 COPY backend/requirements/base.txt .
 
-RUN pip install --upgrade pip && \
-    pip install --no-cache-dir -r base.txt
+RUN python -m pip install --upgrade pip
 
-###########################################################
-# Copy Django Project
-###########################################################
+RUN pip wheel \
+    --no-cache-dir \
+    --wheel-dir /wheels \
+    -r base.txt
 
-COPY backend/ /app/
+############################################################
+# Stage 2 - Runtime
+############################################################
+FROM python:3.12.11-slim
 
-###########################################################
-# Copy Docker Files
-###########################################################
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
-COPY docker/entrypoint.sh /app/entrypoint.sh
+WORKDIR /app
 
-COPY docker/gunicorn.conf.py /app/gunicorn.conf.py
+RUN apt-get update && apt-get install -y \
+    libpq5 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
-###########################################################
-# Make Entrypoint Executable
-###########################################################
+COPY --from=builder /wheels /wheels
+
+COPY backend/requirements/base.txt .
+
+RUN python -m pip install --upgrade pip && \
+    pip install \
+    --no-cache-dir \
+    --no-index \
+    --find-links=/wheels \
+    -r base.txt && \
+    rm -rf /wheels
+
+RUN useradd --create-home --shell /bin/bash appuser
+
+COPY --chown=appuser:appuser backend/ /app/
+
+COPY --chown=appuser:appuser docker/entrypoint.sh /app/entrypoint.sh
+
+COPY --chown=appuser:appuser docker/gunicorn.conf.py /app/gunicorn.conf.py
 
 RUN chmod +x /app/entrypoint.sh
 
-###########################################################
-# Create Non Root User
-###########################################################
-
-RUN useradd -m appuser && \
-    chown -R appuser:appuser /app
-
 USER appuser
-
-###########################################################
-# Expose Port
-###########################################################
 
 EXPOSE 8000
 
-###########################################################
-# Health Check
-###########################################################
-
-HEALTHCHECK --interval=30s --timeout=5s CMD curl --fail http://localhost:8000/health/ || exit 1
-
-###########################################################
-# Start Container
-###########################################################
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+CMD curl --fail http://localhost:8000/health/ || exit 1
 
 ENTRYPOINT ["/app/entrypoint.sh"]

@@ -78,6 +78,16 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r backend/requirements/base.txt
 
+      - name: Show Python Version
+        run: |
+          python --version
+          pip --version
+
+      - name: Run Database Migrations
+        working-directory: backend
+        run: |
+          python manage.py migrate --noinput
+            
       - name: Django System Check
         working-directory: backend
         run: |
@@ -92,3 +102,17 @@ jobs:
         working-directory: backend
         run: |
           python manage.py test
+
+      - name: Verify Docker Build
+        run: |
+          docker build -t enterprisehub:test -f docker/Dockerfile .
+
+      - name: Ruff Lint
+        run: |
+          pip install ruff
+          ruff check backend
+
+      - name: Black Formatting Check
+        run: |
+          pip install black
+          black --check backend
